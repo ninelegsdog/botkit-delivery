@@ -17,6 +17,9 @@ dependencies = [
     "aiohttp>=3.9",
 ]
 
+[tool.setuptools.packages.find]
+include = ["src*"]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
