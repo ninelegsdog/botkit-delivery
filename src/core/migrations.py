@@ -61,6 +61,15 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE INDEX IF NOT EXISTS idx_orders_number ON orders(number);
 CREATE INDEX IF NOT EXISTS idx_orders_client ON orders(client_user_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_order ON subscriptions(order_id, user_id);
+
+CREATE TABLE IF NOT EXISTS webhook_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id INTEGER NOT NULL,
+    status_id INTEGER NOT NULL,
+    source_timestamp TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(order_id, status_id, source_timestamp)
+);
 """
 
 

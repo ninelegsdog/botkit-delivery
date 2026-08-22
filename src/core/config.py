@@ -13,6 +13,7 @@ class Config:
     log_level: str = "INFO"
     sentry_dsn: str = ""
     metrics_port: int = 8088
+    webhook_secret: str = ""
 
     @classmethod
     def from_env(cls) -> Config:
@@ -24,4 +25,5 @@ class Config:
             log_level=os.getenv("LOG_LEVEL", "INFO"),
             sentry_dsn=os.getenv("SENTRY_DSN", ""),
             metrics_port=int(os.getenv("METRICS_PORT", "8088")),
+            webhook_secret=os.getenv("WEBHOOK_SECRET", ""),
         )
