@@ -7,8 +7,8 @@ from aiogram.exceptions import TelegramNetworkError, TelegramRetryAfter
 from aiogram.types import CallbackQuery, Message, Update, User
 from prometheus_client import generate_latest
 from pytest import MonkeyPatch
-from src.core.errors import RetryMiddleware, default_error_handler, register_error_handler
 
+from src.core.errors import RetryMiddleware, default_error_handler, register_error_handler
 from src.core.metrics import UPDATES_TOTAL, create_metrics_app
 
 
