@@ -54,8 +54,7 @@ async def test_start_command(app_state: Any, mock_uow: Any) -> None:
     mock_response.status = 200
     mock_response.__aenter__ = AsyncMock(return_value=mock_response)
     mock_response.__aexit__ = AsyncMock(return_value=False)
-    with patch.object(bot.session, "make_request", new_callable=AsyncMock, return_value=mock_response), \
-         patch("src.app.UnitOfWork", return_value=mock_uow):
+    with patch.object(bot.session, "make_request", new_callable=AsyncMock, return_value=mock_response):
         await app_state.dp.feed_update(bot, update)
         assert True
 
@@ -77,7 +76,6 @@ async def test_admin_panel(app_state: Any, mock_uow: Any) -> None:
     mock_response.status = 200
     mock_response.__aenter__ = AsyncMock(return_value=mock_response)
     mock_response.__aexit__ = AsyncMock(return_value=False)
-    with patch.object(bot.session, "make_request", new_callable=AsyncMock, return_value=mock_response), \
-         patch("src.app.UnitOfWork", return_value=mock_uow):
+    with patch.object(bot.session, "make_request", new_callable=AsyncMock, return_value=mock_response):
         await app_state.dp.feed_update(bot, update)
         assert True
