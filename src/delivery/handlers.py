@@ -37,10 +37,11 @@ def create_delivery_router(app_state: AppState) -> Router:
             return
         await state.clear()
         history = await service.get_order_history(db, int(order["id"]))
-        history_text = "\n".join(
-            f"• {h['changed_at']} — {escape(str(h.get('status_name', '')))}"
-            for h in history
-        ) if history else "Нет истории"
+        history_text = (
+            "\n".join(f"• {h['changed_at']} — {escape(str(h.get('status_name', '')))}" for h in history)
+            if history
+            else "Нет истории"
+        )
 
         kb = InlineKeyboardMarkup(
             inline_keyboard=[

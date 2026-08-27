@@ -61,10 +61,7 @@ def create_admin_router(app_state: AppState) -> Router:
             await state.clear()
             return
         kb = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton(text=s["name"], callback_data=f"os:{s['id']}")]
-                for s in statuses
-            ]
+            inline_keyboard=[[InlineKeyboardButton(text=s["name"], callback_data=f"os:{s['id']}")] for s in statuses]
         )
         await state.set_state(OrderCreate.choosing_status)
         await message.answer("📊 Начальный статус:", reply_markup=kb)

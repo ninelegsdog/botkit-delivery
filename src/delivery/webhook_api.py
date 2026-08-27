@@ -11,9 +11,7 @@ from src.delivery import service
 logger = logging.getLogger(__name__)
 
 
-async def _is_duplicate(
-    state: AppState, order_id: int, status_id: int, ts: str
-) -> bool:
+async def _is_duplicate(state: AppState, order_id: int, status_id: int, ts: str) -> bool:
     async with state.db.session() as session:
         result = await session.execute(
             text(
@@ -25,15 +23,10 @@ async def _is_duplicate(
         return int(result.scalar_one()) > 0
 
 
-async def _record_event(
-    state: AppState, order_id: int, status_id: int, ts: str
-) -> None:
+async def _record_event(state: AppState, order_id: int, status_id: int, ts: str) -> None:
     async with state.db.transaction() as session:
         await session.execute(
-            text(
-                "INSERT INTO webhook_events (order_id, status_id, source_timestamp)"
-                " VALUES (:oid, :sid, :ts)"
-            ),
+            text("INSERT INTO webhook_events (order_id, status_id, source_timestamp) VALUES (:oid, :sid, :ts)"),
             {"oid": order_id, "sid": status_id, "ts": ts},
         )
 

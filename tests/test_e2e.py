@@ -10,8 +10,7 @@ from src.delivery import service
 async def test_full_order_lifecycle(db):
     statuses = await service.get_statuses(db)
     order_id = await service.create_order(
-        db, number="ORD-100", client_label="Иванов",
-        title="Ремонт телефона", status_id=int(statuses[0]["id"])
+        db, number="ORD-100", client_label="Иванов", title="Ремонт телефона", status_id=int(statuses[0]["id"])
     )
     assert order_id > 0
 
@@ -53,10 +52,12 @@ async def test_status_transition_validation(db):
 
 @pytest.mark.asyncio
 async def test_order_card_html():
-    card = order_card({
-        "number": "123",
-        "title": "Test <script>",
-        "status_name": "Принят",
-    })
+    card = order_card(
+        {
+            "number": "123",
+            "title": "Test <script>",
+            "status_name": "Принят",
+        }
+    )
     assert "<script>" not in card
     assert "123" in card

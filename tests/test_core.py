@@ -20,11 +20,13 @@ def test_escape():
 
 
 def test_order_card():
-    card = order_card({
-        "number": "123",
-        "title": "Test <order>",
-        "status_name": "Принят",
-    })
+    card = order_card(
+        {
+            "number": "123",
+            "title": "Test <order>",
+            "status_name": "Принят",
+        }
+    )
     assert "<order>" not in card
     assert "123" in card
     assert "Принят" in card

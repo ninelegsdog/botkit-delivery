@@ -83,7 +83,10 @@ async def migrate(db: Database) -> None:
         row = existing.fetchone()
         if row and int(row[0]) == 0:
             default_statuses = [
-                ("Принят", 0), ("В работе", 1), ("Готов", 2), ("Выдан", 3),
+                ("Принят", 0),
+                ("В работе", 1),
+                ("Готов", 2),
+                ("Выдан", 3),
             ]
             for name, pos in default_statuses:
                 await conn.execute(
@@ -94,9 +97,6 @@ async def migrate(db: Database) -> None:
             ids = [r[0] for r in statuses.fetchall()]
             for i in range(len(ids) - 1):
                 await conn.execute(
-                    text(
-                        "INSERT INTO status_transitions (from_status_id, to_status_id) "
-                        "VALUES (:from_id, :to_id)"
-                    ),
+                    text("INSERT INTO status_transitions (from_status_id, to_status_id) VALUES (:from_id, :to_id)"),
                     {"from_id": ids[i], "to_id": ids[i + 1]},
                 )

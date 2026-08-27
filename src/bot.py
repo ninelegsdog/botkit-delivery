@@ -49,10 +49,12 @@ async def main() -> None:
         loop.add_signal_handler(sig, _signal_handler)
 
     try:
-        await asyncio.wait([
-            asyncio.create_task(state.dp.start_polling(state.bot)),
-            asyncio.create_task(shutdown_event.wait()),
-        ])
+        await asyncio.wait(
+            [
+                asyncio.create_task(state.dp.start_polling(state.bot)),
+                asyncio.create_task(shutdown_event.wait()),
+            ]
+        )
     finally:
         await state.dp.stop_polling()
         await state.bot.session.close()

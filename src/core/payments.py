@@ -7,12 +7,10 @@ class PaymentProvider(ABC):
     @abstractmethod
     async def create_payment(
         self, *, title: str, description: str, payload: str, amount: int, currency: str = "RUB"
-    ) -> str:
-        ...
+    ) -> str: ...
 
     @abstractmethod
-    async def check_payment(self, payment_id: str) -> bool:
-        ...
+    async def check_payment(self, payment_id: str) -> bool: ...
 
 
 class MockPaymentProvider(PaymentProvider):

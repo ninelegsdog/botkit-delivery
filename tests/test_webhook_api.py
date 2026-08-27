@@ -37,23 +37,16 @@ async def env(tmp_path: Any):
 
     # statuses
     async with database.transaction() as session:
-        await session.execute(
-            text("INSERT INTO statuses (name) VALUES ('accepted'), ('in_work')")
-        )
+        await session.execute(text("INSERT INTO statuses (name) VALUES ('accepted'), ('in_work')"))
         row = await session.execute(text("SELECT id FROM statuses WHERE name='accepted'"))
         sid = int(row.scalar_one())
         row = await session.execute(text("SELECT id FROM statuses WHERE name='in_work'"))
         sid2 = int(row.scalar_one())
         await session.execute(
-            text(
-                "INSERT INTO status_transitions (from_status_id, to_status_id)"
-                " VALUES (:a, :b)"
-            ),
+            text("INSERT INTO status_transitions (from_status_id, to_status_id) VALUES (:a, :b)"),
             {"a": sid, "b": sid2},
         )
-    oid = await service.create_order(
-        database, number="ORD-1", client_label="Иван", title="Костюм", status_id=sid
-    )
+    oid = await service.create_order(database, number="ORD-1", client_label="Иван", title="Костюм", status_id=sid)
     app = create_webhook_app(state)  # type: ignore[arg-type]
     server = TestServer(app)
     client = TestClient(server)
@@ -65,8 +58,7 @@ async def env(tmp_path: Any):
 
 async def test_webhook_requires_secret(env: Any) -> None:
     client, oid, _, _ = env
-    resp = await client.post("/webhook/status", json={"order_id": oid, "status": "in_work",
-                                                       "source_timestamp": "1"})
+    resp = await client.post("/webhook/status", json={"order_id": oid, "status": "in_work", "source_timestamp": "1"})
     assert resp.status == 401
 
 

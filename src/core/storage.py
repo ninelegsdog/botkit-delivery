@@ -11,9 +11,7 @@ class Storage:
 
     async def get_setting(self, key: str) -> str | None:
         async with self._db.session() as session:
-            result = await session.execute(
-                text("SELECT value FROM settings WHERE key = :k"), {"k": key}
-            )
+            result = await session.execute(text("SELECT value FROM settings WHERE key = :k"), {"k": key})
             row = result.fetchone()
             return str(row[0]) if row else None
 
