@@ -4,7 +4,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     env:
-      TELEGRAM_BOT_TOKEN: "123456789:AAFakeTokenForCIdelivery000000000"
+      BOT_TOKEN: "123456789:AAFakeTokenForCIdelivery000000000"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
