@@ -7,7 +7,8 @@ from dataclasses import dataclass
 @dataclass
 class Config:
     bot_token: str = ""
-    admin_password: str = "admin123"
+    admin_password: str = ""
+    admin_ids: list[int] = None  # type: ignore[assignment]
     db_path: str = "delivery.db"
     redis_url: str = "redis://localhost:6379/0"
     log_level: str = "INFO"
@@ -17,9 +18,12 @@ class Config:
 
     @classmethod
     def from_env(cls) -> Config:
+        admin_ids_str = os.getenv("ADMIN_IDS", "")
+        admin_ids = [int(x.strip()) for x in admin_ids_str.split(",") if x.strip()]
         return cls(
             bot_token=os.getenv("BOT_TOKEN", ""),
-            admin_password=os.getenv("ADMIN_PASSWORD", "admin123"),
+            admin_password=os.getenv("ADMIN_PASSWORD", ""),
+            admin_ids=admin_ids,
             db_path=os.getenv("DB_PATH", "delivery.db"),
             redis_url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
             log_level=os.getenv("LOG_LEVEL", "INFO"),
@@ -27,3 +31,11 @@ class Config:
             metrics_port=int(os.getenv("METRICS_PORT", "8088")),
             webhook_secret=os.getenv("WEBHOOK_SECRET", ""),
         )
+
+    def validate(self) -> None:
+        if not self.bot_token:
+            raise RuntimeError("BOT_TOKEN is not set")
+        if not self.admin_password:
+            raise RuntimeError("ADMIN_PASSWORD is not set")
+        if not self.admin_ids:
+            raise RuntimeError("ADMIN_IDS is not set")
