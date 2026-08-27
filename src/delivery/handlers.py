@@ -12,9 +12,9 @@ from src.core.ui import escape
 from src.delivery import service
 
 
-def create_delivery_router(state: AppState) -> Router:
+def create_delivery_router(app_state: AppState) -> Router:
     router = Router()
-    db = state.db
+    db = app_state.db
 
     @router.message(Command("start"))
     async def cmd_start(message: Message) -> None:
@@ -24,18 +24,18 @@ def create_delivery_router(state: AppState) -> Router:
         )
 
     @router.message(F.text == "🔍 Проверить заказ")
-    async def start_check(message: Message, state_fsm: FSMContext) -> None:
-        await state_fsm.set_state(OrderCheck.entering_number)
+    async def start_check(message: Message, state: FSMContext) -> None:
+        await state.set_state(OrderCheck.entering_number)
         await message.answer("🔍 Введите номер заказа:")
 
     @router.message(OrderCheck.entering_number)
-    async def check_order(message: Message, state_fsm: FSMContext) -> None:
+    async def check_order(message: Message, state: FSMContext) -> None:
         number = message.text or ""
         order = await service.get_order_by_number(db, number)
         if not order:
             await message.answer("❌ Заказ не найден. Проверьте номер.")
             return
-        await state_fsm.clear()
+        await state.clear()
         history = await service.get_order_history(db, int(order["id"]))
         history_text = "\n".join(
             f"• {h['changed_at']} — {escape(str(h.get('status_name', '')))}"

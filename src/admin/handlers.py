@@ -12,53 +12,53 @@ from src.core.ui import escape, order_card
 from src.delivery import service
 
 
-def create_admin_router(state: AppState) -> Router:
+def create_admin_router(app_state: AppState) -> Router:
     router = Router()
-    db = state.db
+    db = app_state.db
 
     def is_admin(user_id: int) -> bool:
-        return user_id in (state.config.admin_ids or [])
+        return user_id in (app_state.config.admin_ids or [])
 
     @router.message(Command("admin"))
-    async def cmd_admin(message: Message, state_fsm: FSMContext) -> None:
-        await state_fsm.set_state(AdminAuth.waiting_password)
+    async def cmd_admin(message: Message, state: FSMContext) -> None:
+        await state.set_state(AdminAuth.waiting_password)
         await message.answer("🔑 Введите пароль:")
 
     @router.message(AdminAuth.waiting_password)
-    async def check_password(message: Message, state_fsm: FSMContext) -> None:
-        if message.text == state.config.admin_password:
-            await state_fsm.clear()
+    async def check_password(message: Message, state: FSMContext) -> None:
+        if message.text == app_state.config.admin_password:
+            await state.clear()
             await message.answer("✅ Добро пожаловать!", reply_markup=admin_menu())
         else:
-            await state_fsm.clear()
+            await state.clear()
             await message.answer("❌ Неверный пароль.", reply_markup=client_menu())
 
     @router.message(F.text == "➕ Новый заказ")
-    async def start_new_order(message: Message, state_fsm: FSMContext) -> None:
+    async def start_new_order(message: Message, state: FSMContext) -> None:
         if not is_admin(message.from_user.id):  # type: ignore[union-attr]
             return
-        await state_fsm.set_state(OrderCreate.entering_number)
+        await state.set_state(OrderCreate.entering_number)
         await message.answer("📋 Номер заказа:")
 
     @router.message(OrderCreate.entering_number)
-    async def enter_order_number(message: Message, state_fsm: FSMContext) -> None:
-        await state_fsm.update_data(number=message.text or "")
-        await state_fsm.set_state(OrderCreate.entering_client)
+    async def enter_order_number(message: Message, state: FSMContext) -> None:
+        await state.update_data(number=message.text or "")
+        await state.set_state(OrderCreate.entering_client)
         await message.answer("👤 Клиент (username или user_id):")
 
     @router.message(OrderCreate.entering_client)
-    async def enter_order_client(message: Message, state_fsm: FSMContext) -> None:
-        await state_fsm.update_data(client=message.text or "")
-        await state_fsm.set_state(OrderCreate.entering_title)
+    async def enter_order_client(message: Message, state: FSMContext) -> None:
+        await state.update_data(client=message.text or "")
+        await state.set_state(OrderCreate.entering_title)
         await message.answer("📝 Название заказа:")
 
     @router.message(OrderCreate.entering_title)
-    async def enter_order_title(message: Message, state_fsm: FSMContext) -> None:
-        await state_fsm.update_data(title=message.text or "")
+    async def enter_order_title(message: Message, state: FSMContext) -> None:
+        await state.update_data(title=message.text or "")
         statuses = await service.get_statuses(db)
         if not statuses:
             await message.answer("❌ Нет статусов. Настройте статусы.")
-            await state_fsm.clear()
+            await state.clear()
             return
         kb = InlineKeyboardMarkup(
             inline_keyboard=[
@@ -66,16 +66,16 @@ def create_admin_router(state: AppState) -> Router:
                 for s in statuses
             ]
         )
-        await state_fsm.set_state(OrderCreate.choosing_status)
+        await state.set_state(OrderCreate.choosing_status)
         await message.answer("📊 Начальный статус:", reply_markup=kb)
 
     @router.callback_query(F.data.startswith("os:"), OrderCreate.choosing_status)
-    async def choose_status(callback: CallbackQuery, state_fsm: FSMContext) -> None:
+    async def choose_status(callback: CallbackQuery, state: FSMContext) -> None:
         if not callback.data:
             return
         status_id = int(callback.data.split(":")[1])
-        await state_fsm.update_data(status_id=status_id)
-        data = await state_fsm.get_data()
+        await state.update_data(status_id=status_id)
+        data = await state.get_data()
         kb = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -84,7 +84,7 @@ def create_admin_router(state: AppState) -> Router:
                 ]
             ]
         )
-        await state_fsm.set_state(OrderCreate.confirming)
+        await state.set_state(OrderCreate.confirming)
         await callback.message.edit_text(  # type: ignore[union-attr]
             f"Создать заказ?\n"
             f"📋 #{escape(str(data.get('number', '')))}\n"
@@ -95,8 +95,8 @@ def create_admin_router(state: AppState) -> Router:
         await callback.answer()
 
     @router.callback_query(F.data == "order_confirm", OrderCreate.confirming)
-    async def confirm_order(callback: CallbackQuery, state_fsm: FSMContext) -> None:
-        data = await state_fsm.get_data()
+    async def confirm_order(callback: CallbackQuery, state: FSMContext) -> None:
+        data = await state.get_data()
         await service.create_order(
             db,
             number=str(data.get("number", "")),
@@ -104,14 +104,14 @@ def create_admin_router(state: AppState) -> Router:
             title=str(data.get("title", "")),
             status_id=int(str(data.get("status_id", 0))),
         )
-        await state_fsm.clear()
+        await state.clear()
         await callback.message.edit_text("✅ Заказ создан!")  # type: ignore[union-attr]
         await callback.answer()
         await callback.message.answer(f"📦 Заказ #{data.get('number', '')} создан.", reply_markup=admin_menu())  # type: ignore[union-attr]
 
     @router.callback_query(F.data == "order_cancel")
-    async def cancel_order(callback: CallbackQuery, state_fsm: FSMContext) -> None:
-        await state_fsm.clear()
+    async def cancel_order(callback: CallbackQuery, state: FSMContext) -> None:
+        await state.clear()
         await callback.message.edit_text("Отменено.")  # type: ignore[union-attr]
         await callback.answer()
         await callback.message.answer("Выберите действие:", reply_markup=admin_menu())  # type: ignore[union-attr]
@@ -154,7 +154,7 @@ def create_admin_router(state: AppState) -> Router:
         subscribers = await service.get_order_subscribers(db, order_id)
         for uid in subscribers:
             try:
-                await state.bot.send_message(
+                await app_state.bot.send_message(
                     uid,
                     f"📦 Заказ #{order['number']}: статус → {next_st['name']}",
                 )
