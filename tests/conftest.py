@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import os
+
 import pytest
 
 from src.core.config import Config
@@ -14,3 +17,29 @@ async def db():
     await migrate(database)
     yield database
     await database.close()
+
+
+_PAYLOADS_DIR = os.path.join(os.path.dirname(__file__), "fixtures", "payloads")
+
+
+@pytest.fixture
+def load_payload():
+    """Load a JSON Telegram-update fixture from tests/fixtures/payloads/."""
+
+    def _load(name: str) -> dict:
+        with open(os.path.join(_PAYLOADS_DIR, name), encoding="utf-8") as fh:
+            return json.load(fh)
+
+    return _load
+
+
+def pytest_collection_modifyitems(config, items):
+    """Tag offline tests as no_req; skip real Telegram (req) tests without RUN_TELEGRAM_E2E=1."""
+    for item in items:
+        if "req" in item.keywords:
+            if os.getenv("RUN_TELEGRAM_E2E") != "1":
+                item.add_marker(
+                    pytest.mark.skip(reason="set RUN_TELEGRAM_E2E=1 to run real Telegram tests")
+                )
+        elif "no_req" not in item.keywords:
+            item.add_marker(pytest.mark.no_req)
