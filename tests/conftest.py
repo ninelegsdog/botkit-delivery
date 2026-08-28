@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+from typing import Any
 
 import pytest
 
@@ -23,7 +24,7 @@ _PAYLOADS_DIR = os.path.join(os.path.dirname(__file__), "fixtures", "payloads")
 
 
 @pytest.fixture
-def load_payload():
+def load_payload() -> Any:
     """Load a JSON Telegram-update fixture from tests/fixtures/payloads/."""
 
     def _load(name: str) -> dict:
@@ -33,7 +34,7 @@ def load_payload():
     return _load
 
 
-def pytest_collection_modifyitems(config, items):
+def pytest_collection_modifyitems(config: Any, items: Any) -> None:
     """Tag offline tests as no_req; skip real Telegram (req) tests without RUN_TELEGRAM_E2E=1."""
     for item in items:
         if "req" in item.keywords:
