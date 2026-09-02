@@ -19,6 +19,7 @@ from src.core.migrations import migrate
 from src.core.sentry import init_sentry
 from src.core.tgwebhook import build_webhook_app
 from src.core.throttling import ThrottlingMiddleware
+from src.core.tracing import setup_tracing
 from src.delivery.webhook_api import create_webhook_app as create_delivery_webhook_app
 
 
@@ -96,6 +97,7 @@ async def main() -> None:
     state = create_app()
     state.config.validate()
     setup_logging(level="INFO", json=True, bot_name="delivery")
+    setup_tracing(service_name="delivery")
     init_sentry(state.config.sentry_dsn)
     await migrate(state.db)
     state.dp.message.middleware(AuthMiddleware(state.db))
