@@ -14,9 +14,9 @@ jobs:
         env:
           BOTKIT_CORE_TOKEN: ${{ secrets.BOTKIT_CORE_TOKEN }}
         run: |
-          # Configure git auth via .netrc (more reliable than insteadOf in Actions)
-          printf 'machine github.com\n  login x-access-token\n  password %s\n' "${BOTKIT_CORE_TOKEN}" > ~/.netrc
-          chmod 600 ~/.netrc
+          # Explicit git clone to avoid pip/git auth issues in Actions
+          git clone https://x-access-token:${BOTKIT_CORE_TOKEN}@github.com/ninelegsdog/botkit-core.git /tmp/botkit-core
+          pip install -e /tmp/botkit-core
           pip install -e ".[dev]"
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38  # v5.4.0
         with:
