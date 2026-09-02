@@ -10,6 +10,12 @@ jobs:
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38  # v5.4.0
         with:
           python-version: "3.12"
+      - name: Debug secret
+        env:
+          BOTKIT_CORE_TOKEN: ${{ secrets.BOTKIT_CORE_TOKEN }}
+        run: |
+          printf "LEN=%s\n" "${#BOTKIT_CORE_TOKEN}"
+          printf "%s" "$BOTKIT_CORE_TOKEN" | sha256sum
       - name: Clone botkit-core (private)
         env:
           BOTKIT_CORE_TOKEN: ${{ secrets.BOTKIT_CORE_TOKEN }}
