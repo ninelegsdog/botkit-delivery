@@ -16,10 +16,7 @@ jobs:
         run: |
           # Create a dedicated git config file to avoid checkout action interference
           mkdir -p /tmp/gitconfig
-          cat > /tmp/gitconfig/config << GITEOF
-[url "https://x-access-token:${BOTKIT_CORE_TOKEN}@github.com/ninelegsdog/botkit-core"]
-  insteadOf = https://github.com/ninelegsdog/botkit-core
-GITEOF
+          git config --file /tmp/gitconfig/config url."https://x-access-token:${BOTKIT_CORE_TOKEN}@github.com/ninelegsdog/botkit-core".insteadOf "https://github.com/ninelegsdog/botkit-core"
           echo "GIT_CONFIG_GLOBAL=/tmp/gitconfig/config" >> $GITHUB_ENV
       - run: pip install -e ".[dev]"
       - run: ruff check .
