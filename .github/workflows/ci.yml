@@ -10,21 +10,13 @@ jobs:
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38  # v5.4.0
         with:
           python-version: "3.12"
-      - name: Debug secret
+      - name: Configure git for private botkit-core
         env:
           BOTKIT_CORE_TOKEN: ${{ secrets.BOTKIT_CORE_TOKEN }}
         run: |
-          printf "LEN=%s\n" "${#BOTKIT_CORE_TOKEN}"
-          printf "%s" "$BOTKIT_CORE_TOKEN" | sha256sum
-      - name: Clone botkit-core (private)
-        env:
-          BOTKIT_CORE_TOKEN: ${{ secrets.BOTKIT_CORE_TOKEN }}
-        run: |
-          git clone https://x-access-token:${BOTKIT_CORE_TOKEN}@github.com/ninelegsdog/botkit-core.git botkit-core
-          cd botkit-core && git checkout v0.1.1
+          git config --global url."https://x-access-token:${BOTKIT_CORE_TOKEN}@github.com/".insteadOf "https://github.com/"
       - name: Install dependencies
         run: |
-          pip install -e ./botkit-core
           pip install -e ".[dev]"
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38  # v5.4.0
         with:
