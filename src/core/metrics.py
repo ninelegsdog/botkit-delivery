@@ -6,23 +6,20 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from aiohttp import web
+from botkit_core.metrics import (
+    BOTKIT_ERRORS_TOTAL,
+    BOTKIT_UPDATES_TOTAL,
+)
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 
 logger = logging.getLogger(__name__)
 
-UPDATES_TOTAL = Counter(
-    "bot_updates_total",
-    "Total updates received from Telegram",
-    ["type"],
-)
+UPDATES_TOTAL = BOTKIT_UPDATES_TOTAL
+ERRORS_TOTAL = BOTKIT_ERRORS_TOTAL
+
 STATUS_UPDATES_TOTAL = Counter(
     "bot_status_updates_total",
     "Delivery status updates",
-)
-ERRORS_TOTAL = Counter(
-    "bot_errors_total",
-    "Total errors handled by the global error handler",
-    ["error_type"],
 )
 
 
