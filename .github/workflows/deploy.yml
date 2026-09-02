@@ -26,7 +26,13 @@ jobs:
         env:
           BOTKIT_CORE_TOKEN: ${{ secrets.BOTKIT_CORE_TOKEN }}
         run: |
-          git config --global url."https://x-access-token:${BOTKIT_CORE_TOKEN}@github.com/ninelegsdog/botkit-core".insteadOf "https://github.com/ninelegsdog/botkit-core"
+          # Create a dedicated git config file to avoid checkout action interference
+          mkdir -p /tmp/gitconfig
+          cat > /tmp/gitconfig/config << GITEOF
+[url "https://x-access-token:${BOTKIT_CORE_TOKEN}@github.com/ninelegsdog/botkit-core"]
+  insteadOf = https://github.com/ninelegsdog/botkit-core
+GITEOF
+          echo "GIT_CONFIG_GLOBAL=/tmp/gitconfig/config" >> $GITHUB_ENV
 
       - name: Install
         run: |
