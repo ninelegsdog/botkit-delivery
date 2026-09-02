@@ -16,7 +16,7 @@ jobs:
         run: |
           # Configure git auth in same step as pip install to ensure env is inherited
           mkdir -p /tmp/gitconfig
-          git config --file /tmp/gitconfig/config url."https://x-access-token:${BOTKIT_CORE_TOKEN}@github.com/ninelegsdog/botkit-core"".insteadOf "https://github.com/ninelegsdog/botkit-core"
+          git config --file /tmp/gitconfig/config "url.https://x-access-token:${BOTKIT_CORE_TOKEN}@github.com/ninelegsdog/botkit-core.insteadOf" "https://github.com/ninelegsdog/botkit-core"
           export GIT_CONFIG_GLOBAL=/tmp/gitconfig/config
           pip install -e ".[dev]"
       - run: ruff check .
