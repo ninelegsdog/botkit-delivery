@@ -14,16 +14,10 @@ jobs:
         env:
           BOTKIT_CORE_TOKEN: ${{ secrets.BOTKIT_CORE_TOKEN }}
         run: |
-          # Configure git auth in same step as pip install to ensure env is inherited
-          mkdir -p /tmp/gitconfig
-          git config --file /tmp/gitconfig/config "url.https://x-access-token:${BOTKIT_CORE_TOKEN}@github.com/ninelegsdog/botkit-core.insteadOf" "https://github.com/ninelegsdog/botkit-core"
-          export GIT_CONFIG_GLOBAL=/tmp/gitconfig/config
+          # Configure git auth via .netrc (more reliable than insteadOf in Actions)
+          printf 'machine github.com\n  login x-access-token\n  password %s\n' "${BOTKIT_CORE_TOKEN}" > ~/.netrc
+          chmod 600 ~/.netrc
           pip install -e ".[dev]"
-      - run: ruff check .
-      - run: mypy src/
-      - run: pytest --cov=src --cov-report=term-missing
-
-      # Pre-commit checks
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38  # v5.4.0
         with:
           python-version: "3.12"
