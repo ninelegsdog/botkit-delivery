@@ -14,7 +14,7 @@ from src.core.auth import AuthMiddleware
 from src.core.bot_factory import create_app
 from src.core.errors import RetryMiddleware, register_error_handler
 from src.core.logging import LoggingMiddleware, setup_logging
-from src.core.metrics import UpdatesMiddleware, health, metrics, start_metrics_server
+from src.core.metrics import UpdatesMiddleware, health, metrics, start_metrics_server, version
 from src.core.migrations import migrate
 from src.core.sentry import init_sentry
 from src.core.tgwebhook import build_webhook_app
@@ -34,6 +34,7 @@ async def _run_webhook(state: Any, shutdown_event: asyncio.Event) -> None:
     # Build combined webhook app with both Telegram and delivery webhooks
     tg_app = build_webhook_app(state.dp, state.bot, state.config.webhook_secret)
     tg_app.router.add_get("/health", health)
+    tg_app.router.add_get("/version", version)
     tg_app.router.add_get("/metrics", metrics)
 
     # Mount delivery webhook at /webhook/status
@@ -74,6 +75,7 @@ async def _run_polling(state: Any, shutdown_event: asyncio.Event) -> None:
     delivery_app = create_delivery_webhook_app(state)
     delivery_app["state"] = state
     delivery_app.router.add_get("/health", health)
+    delivery_app.router.add_get("/version", version)
     delivery_app.router.add_get("/metrics", metrics)
     delivery_runner = web.AppRunner(delivery_app)
     await delivery_runner.setup()
