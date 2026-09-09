@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import signal
 from pathlib import Path
 from typing import Any
@@ -44,7 +45,7 @@ async def _run_webhook(state: Any, shutdown_event: asyncio.Event) -> None:
     tg_app["state"] = state
     runner = web.AppRunner(tg_app)
     await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", state.config.metrics_port)
+    site = web.TCPSite(runner, os.getenv("BIND_HOST", "0.0.0.0"), state.config.metrics_port)
     await site.start()
     logging.info("Webhook HTTP server listening on :%s", state.config.metrics_port)
 
@@ -79,7 +80,7 @@ async def _run_polling(state: Any, shutdown_event: asyncio.Event) -> None:
     delivery_app.router.add_get("/metrics", metrics)
     delivery_runner = web.AppRunner(delivery_app)
     await delivery_runner.setup()
-    delivery_site = web.TCPSite(delivery_runner, "0.0.0.0", 8089)
+    delivery_site = web.TCPSite(delivery_runner, os.getenv("BIND_HOST", "0.0.0.0"), 8089)
     await delivery_site.start()
     logging.info("Delivery webhook listening on :8089")
 
