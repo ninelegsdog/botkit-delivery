@@ -52,3 +52,5 @@ class Config:
             raise RuntimeError("ADMIN_PASSWORD is not set")
         if not self.admin_ids:
             raise RuntimeError("ADMIN_IDS is not set")
+
+# ci-test: B1 auto-rollout smoke commit (18.09)
