@@ -31,7 +31,7 @@ class ThrottlingMiddleware(BaseMiddleware):
             if now - last < self._min_interval:
                 # Double-check with Redis
                 try:
-                    redis_last = await self._redis.get(f"throttle:{user_id}")
+                    redis_last = await self._redis.get(f"throttle:delivery:{user_id}")
                     if redis_last and now - float(redis_last) < self._min_interval:
                         return None
                 except Exception:
@@ -40,7 +40,7 @@ class ThrottlingMiddleware(BaseMiddleware):
             # Update both local and Redis
             self._local_cache[user_id] = now
             try:
-                await self._redis.set(f"throttle:{user_id}", str(now), ex=int(self._min_interval * 2))
+                await self._redis.set(f"throttle:delivery:{user_id}", str(now), ex=int(self._min_interval * 2))
             except Exception:
                 pass  # Don't fail on Redis errors
         return await handler(event, data)
