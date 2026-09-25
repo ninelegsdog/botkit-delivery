@@ -13,7 +13,7 @@ from src.core.metrics import Metrics
 from src.core.throttling import ThrottlingMiddleware
 
 
-def test_message(user_id: int = 42) -> Message:
+def make_message(user_id: int = 42) -> Message:
     return Message(
         message_id=1,
         date=datetime.now(UTC),
@@ -32,7 +32,7 @@ async def test_throttled_returns_none():
     async def handler(event, data):
         return "ok"
 
-    assert await mw.__call__(handler, test_message(42), {}) is None
+    assert await mw.__call__(handler, make_message(42), {}) is None
 
 
 @pytest.mark.asyncio
@@ -45,7 +45,7 @@ async def test_throttled_redis_error_falls_back():
     async def handler(event, data):
         return "ok"
 
-    await mw.__call__(handler, test_message(42), {})
+    await mw.__call__(handler, make_message(42), {})
     assert mw._local_cache.get(42) is not None
 
 
