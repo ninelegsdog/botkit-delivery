@@ -17,7 +17,6 @@ class Config:
     metrics_port: int = 8088
     webhook_secret: str = ""
     webhook_url: str = ""
-    webhook_cert_path: str = ""
 
     @classmethod
     def from_env(cls) -> Config:
@@ -42,7 +41,6 @@ class Config:
             metrics_port=int(os.getenv("METRICS_PORT", "8088")),
             webhook_secret=os.getenv("WEBHOOK_SECRET", ""),
             webhook_url=os.getenv("WEBHOOK_URL", ""),
-            webhook_cert_path=os.getenv("WEBHOOK_CERT_PATH", ""),
         )
 
     def validate(self) -> None:
