@@ -81,3 +81,36 @@ async def test_admin_panel(app_state: Any) -> None:
         await app_state.dp.feed_update(bot, update)
         assert mock_req.await_count >= 1
         assert "Введите пароль" in _sent_text(bot)
+
+
+@pytest.mark.asyncio
+async def test_create_delivery_router_start_clears_fsm_state() -> None:
+    """Пользователь был посреди сценария: /start обязан сбросить состояние."""
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock, MagicMock
+
+    from aiogram.fsm.context import FSMContext
+    from aiogram.fsm.storage.base import StorageKey
+    from aiogram.fsm.storage.memory import MemoryStorage
+    from aiogram.types import User
+
+    from src.core.fsm import OrderCheck
+    from src.delivery.handlers import create_delivery_router
+
+    router = create_delivery_router(SimpleNamespace(db=MagicMock()))
+    handler = next(
+        (h.callback for h in router.message.handlers if getattr(h.callback, "__name__", None) == "cmd_start"),
+        None,
+    )
+    assert handler is not None, "обработчик cmd_start не найден"
+
+    fsm_ctx = FSMContext(MemoryStorage(), StorageKey(bot_id=0, chat_id=1, user_id=1))
+    await fsm_ctx.set_state(OrderCheck.entering_number)
+    assert await fsm_ctx.get_state() is not None
+
+    msg = MagicMock()
+    msg.answer = AsyncMock()
+    msg.from_user = User(id=1, is_bot=False, first_name="Test")
+    await handler(msg, fsm_ctx)
+
+    assert await fsm_ctx.get_state() is None
