@@ -50,7 +50,11 @@ jobs:
       # пинненной версией CLI, без обращений к API; SARIF уходит в code scanning.
       - name: Gitleaks scan
         run: |
-          curl -sfL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz | tar -xz -C /tmp gitleaks
+          curl -sfL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_checksums.txt -o /tmp/gitleaks_checksums.txt
+          curl -sfL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz -o /tmp/gitleaks.tgz
+          expected=$(awk -v f="gitleaks_8.24.3_linux_x64.tar.gz" '{n=$2; sub(/^\*/,"",n); if (n==f) print $1}' /tmp/gitleaks_checksums.txt)
+          echo "$expected  /tmp/gitleaks.tgz" | sha256sum -c -
+          tar -xzf /tmp/gitleaks.tgz -C /tmp gitleaks
           /tmp/gitleaks detect --source . --redact --no-banner --report-format sarif --report-path gitleaks.sarif
       - name: Upload Gitleaks results
         uses: github/codeql-action/upload-sarif@fddeee1a7ece751b577e409a89057319e3172939  # v4.0.0
@@ -62,7 +66,11 @@ jobs:
       # Trivy filesystem scan
       - name: Trivy filesystem scan
         run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /tmp/trivybin
+          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_checksums.txt -o /tmp/trivy_checksums.txt
+          curl -sfL https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-64bit.tar.gz -o /tmp/trivy.tgz
+          expected=$(awk -v f="trivy_0.75.0_Linux-64bit.tar.gz" '{n=$2; sub(/^\*/,"",n); if (n==f) print $1}' /tmp/trivy_checksums.txt)
+          echo "$expected  /tmp/trivy.tgz" | sha256sum -c -
+          mkdir -p /tmp/trivybin && tar -xzf /tmp/trivy.tgz -C /tmp/trivybin trivy
           /tmp/trivybin/trivy fs --severity CRITICAL,HIGH --exit-code 1 --format sarif --output trivy-fs.sarif .
       - name: Upload Trivy FS results
         uses: github/codeql-action/upload-sarif@fddeee1a7ece751b577e409a89057319e3172939  # v4.0.0
