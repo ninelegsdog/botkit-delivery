@@ -32,6 +32,10 @@ jobs:
       - name: Run pre-commit
         run: pre-commit run --all-files
 
+      # Run the test suite on every PR/push, not only on deploy to main.
+      - name: Test
+        run: pytest -q
+
       # Version drift check
       - name: Version drift check
         run: |
