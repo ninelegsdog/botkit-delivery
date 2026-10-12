@@ -6,6 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from src.core.bot_factory import AppState
+from src.core.callbacks import parse_callback_int
 from src.core.fsm import OrderCheck
 from src.core.nav import client_menu
 from src.core.ui import escape
@@ -64,7 +65,10 @@ def create_delivery_router(app_state: AppState) -> Router:
     async def subscribe(callback: CallbackQuery) -> None:
         if not callback.data:
             return
-        order_id = int(callback.data.split(":")[1])
+        order_id = parse_callback_int(callback.data, "sub:")
+        if order_id is None:
+            await callback.answer("Некорректный запрос.", show_alert=True)
+            return
         await service.subscribe_order(db, order_id, callback.from_user.id)
         await callback.message.edit_text("🔔 Вы следите за этим заказом.")  # type: ignore[union-attr]
         await callback.answer()
@@ -73,7 +77,10 @@ def create_delivery_router(app_state: AppState) -> Router:
     async def unsubscribe(callback: CallbackQuery) -> None:
         if not callback.data:
             return
-        order_id = int(callback.data.split(":")[1])
+        order_id = parse_callback_int(callback.data, "unsub:")
+        if order_id is None:
+            await callback.answer("Некорректный запрос.", show_alert=True)
+            return
         await service.unsubscribe_order(db, order_id, callback.from_user.id)
         await callback.message.edit_text("🔕 Вы отписались от уведомлений.")  # type: ignore[union-attr]
         await callback.answer()

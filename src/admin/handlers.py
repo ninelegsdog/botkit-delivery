@@ -7,6 +7,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 
 from src.core.auth import AdminGate
 from src.core.bot_factory import AppState
+from src.core.callbacks import parse_callback_int
 from src.core.fsm import AdminAuth, OrderCreate
 from src.core.nav import admin_menu, client_menu
 from src.core.ui import escape, order_card
@@ -89,7 +90,10 @@ def create_admin_router(app_state: AppState) -> Router:
     async def choose_status(callback: CallbackQuery, state: FSMContext) -> None:
         if not callback.data:
             return
-        status_id = int(callback.data.split(":")[1])
+        status_id = parse_callback_int(callback.data, "os:")
+        if status_id is None:
+            await callback.answer("Некорректный запрос.", show_alert=True)
+            return
         await state.update_data(status_id=status_id)
         data = await state.get_data()
         kb = InlineKeyboardMarkup(
@@ -156,7 +160,10 @@ def create_admin_router(app_state: AppState) -> Router:
     async def next_status(callback: CallbackQuery) -> None:
         if not callback.data:
             return
-        order_id = int(callback.data.split(":")[1])
+        order_id = parse_callback_int(callback.data, "next:")
+        if order_id is None:
+            await callback.answer("Некорректный запрос.", show_alert=True)
+            return
         order = await service.get_order(db, order_id)
         if not order:
             await callback.answer("Заказ не найден.")
@@ -183,7 +190,10 @@ def create_admin_router(app_state: AppState) -> Router:
     async def close_order(callback: CallbackQuery) -> None:
         if not callback.data:
             return
-        order_id = int(callback.data.split(":")[1])
+        order_id = parse_callback_int(callback.data, "close:")
+        if order_id is None:
+            await callback.answer("Некорректный запрос.", show_alert=True)
+            return
         kb = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -199,7 +209,10 @@ def create_admin_router(app_state: AppState) -> Router:
     async def confirm_close(callback: CallbackQuery) -> None:
         if not callback.data:
             return
-        order_id = int(callback.data.split(":")[1])
+        order_id = parse_callback_int(callback.data, "close_yes:")
+        if order_id is None:
+            await callback.answer("Некорректный запрос.", show_alert=True)
+            return
         await service.close_order(db, order_id)
         await callback.message.edit_text("✅ Заказ закрыт.")  # type: ignore[union-attr]
         await callback.answer()
