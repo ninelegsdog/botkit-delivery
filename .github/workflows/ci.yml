@@ -42,7 +42,7 @@ jobs:
 
       # Run the test suite on every PR/push, not only on deploy to main.
       - name: Test
-        run: uv run --frozen pytest -q
+        run: uv run --frozen pytest --run-integration -q
 
       # Version drift check
       - name: Version drift check
