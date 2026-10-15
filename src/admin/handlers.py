@@ -18,17 +18,17 @@ def create_admin_router(app_state: AppState) -> Router:
     router = Router()
     db = app_state.db
 
-    def is_admin(user_id: int) -> bool:
-        return user_id in (app_state.config.admin_ids or [])
-
     # The password check below compared in constant time but had no attempt
     # limit, so the admin surface allowed unlimited guesses. AdminGate adds the
     # throttle; is_throttled is checked BEFORE authorize so guesses are refused
-    # for the whole window. is_admin keeps its old meaning: config admins, plus
-    # anyone the gate has authorised.
-    gate = AdminGate(
-        app_state.config.admin_password, app_state.config.admin_ids or []
-    )
+    # for the whole window.
+    # The gate tracks only password-authorised users here; configured admins are
+    # read dynamically below, so both sources agree with the running config.
+    gate = AdminGate(app_state.config.admin_password)
+
+    def is_admin(user_id: int) -> bool:
+        # Config admins, plus anyone the gate has authorised.
+        return user_id in (app_state.config.admin_ids or []) or gate.is_admin(user_id)
 
     @router.message(Command("admin"))
     async def cmd_admin(message: Message, state: FSMContext) -> None:
@@ -88,6 +88,8 @@ def create_admin_router(app_state: AppState) -> Router:
 
     @router.callback_query(F.data.startswith("os:"), OrderCreate.choosing_status)
     async def choose_status(callback: CallbackQuery, state: FSMContext) -> None:
+        if not callback.from_user or not is_admin(callback.from_user.id):
+            return
         if not callback.data:
             return
         status_id = parse_callback_int(callback.data, "os:")
@@ -116,6 +118,8 @@ def create_admin_router(app_state: AppState) -> Router:
 
     @router.callback_query(F.data == "order_confirm", OrderCreate.confirming)
     async def confirm_order(callback: CallbackQuery, state: FSMContext) -> None:
+        if not callback.from_user or not is_admin(callback.from_user.id):
+            return
         data = await state.get_data()
         await service.create_order(
             db,
@@ -131,6 +135,8 @@ def create_admin_router(app_state: AppState) -> Router:
 
     @router.callback_query(F.data == "order_cancel")
     async def cancel_order(callback: CallbackQuery, state: FSMContext) -> None:
+        if not callback.from_user or not is_admin(callback.from_user.id):
+            return
         await state.clear()
         await callback.message.edit_text("Отменено.")  # type: ignore[union-attr]
         await callback.answer()
@@ -158,6 +164,8 @@ def create_admin_router(app_state: AppState) -> Router:
 
     @router.callback_query(F.data.startswith("next:"))
     async def next_status(callback: CallbackQuery) -> None:
+        if not callback.from_user or not is_admin(callback.from_user.id):
+            return
         if not callback.data:
             return
         order_id = parse_callback_int(callback.data, "next:")
@@ -188,6 +196,8 @@ def create_admin_router(app_state: AppState) -> Router:
 
     @router.callback_query(F.data.startswith("close:"))
     async def close_order(callback: CallbackQuery) -> None:
+        if not callback.from_user or not is_admin(callback.from_user.id):
+            return
         if not callback.data:
             return
         order_id = parse_callback_int(callback.data, "close:")
@@ -207,6 +217,8 @@ def create_admin_router(app_state: AppState) -> Router:
 
     @router.callback_query(F.data.startswith("close_yes:"))
     async def confirm_close(callback: CallbackQuery) -> None:
+        if not callback.from_user or not is_admin(callback.from_user.id):
+            return
         if not callback.data:
             return
         order_id = parse_callback_int(callback.data, "close_yes:")
@@ -219,6 +231,8 @@ def create_admin_router(app_state: AppState) -> Router:
 
     @router.callback_query(F.data == "close_no")
     async def cancel_close(callback: CallbackQuery) -> None:
+        if not callback.from_user or not is_admin(callback.from_user.id):
+            return
         await callback.message.edit_text("Оставлено.")  # type: ignore[union-attr]
         await callback.answer()
 
