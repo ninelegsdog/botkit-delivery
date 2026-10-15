@@ -83,7 +83,7 @@ jobs:
     name: Ферма · офлайн-прогоны
     permissions:
       contents: read
-    uses: ninelegsdog/botkit-farm/.github/workflows/farm-smoke.yml@fix/farm-smoke-bwrap
+    uses: ninelegsdog/botkit-farm/.github/workflows/farm-smoke.yml@main
     with:
       bot: delivery
 
