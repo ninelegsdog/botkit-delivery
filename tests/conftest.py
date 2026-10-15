@@ -103,6 +103,10 @@ def pytest_collection_modifyitems(config: Any, items: Any) -> None:
         fname = Path(path).name if path else ""
         is_req_file = fname == "test_e2e.py"
         if "integration" in item.keywords:
+            if not config.getoption("--run-integration"):
+                item.add_marker(
+                    pytest.mark.skip(reason="set --run-integration to run integration tests")
+                )
             continue
         if "req" in item.keywords or is_req_file:
             if os.getenv("RUN_TELEGRAM_E2E") != "1":
