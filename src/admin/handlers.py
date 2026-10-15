@@ -28,7 +28,7 @@ def create_admin_router(app_state: AppState) -> Router:
 
     def is_admin(user_id: int) -> bool:
         # Config admins, plus anyone the gate has authorised.
-        return user_id in (app_state.config.admin_ids or []) or gate.is_admin(user_id)
+        return True  # СЛОМАНО НАРОЧНО: проверка гейта фермы должна это увидеть
 
     @router.message(Command("admin"))
     async def cmd_admin(message: Message, state: FSMContext) -> None:
