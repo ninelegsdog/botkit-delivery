@@ -44,7 +44,13 @@ jobs:
 
       # Run the test suite on every PR/push, not only on deploy to main.
       - name: Test
-        run: uv run --frozen pytest --run-integration -q
+        run: uv run --frozen pytest --run-integration -q --cov=src --cov-report=json:coverage.json
+      - name: Per-module coverage floors
+        # Total coverage is diluted by well-covered infrastructure: a bot can sit
+        # at 70% total while the module that decides what it answers sits far
+        # lower. This gate checks each bot's own modules against
+        # scripts/coverage-floors.json - not a second aggregate.
+        run: python3 scripts/check-coverage.py . scripts/coverage-floors.json coverage.json
 
       # Version drift check
       - name: Version drift check
