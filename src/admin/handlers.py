@@ -11,7 +11,7 @@ from src.core.callbacks import parse_callback_int
 from src.core.fsm import AdminAuth, OrderCreate
 from src.core.nav import admin_menu, client_menu
 from src.core.ui import escape, order_card
-from src.delivery import service
+from src.delivery import service, texts
 
 
 def create_admin_router(app_state: AppState) -> Router:
@@ -33,7 +33,7 @@ def create_admin_router(app_state: AppState) -> Router:
     @router.message(Command("admin"))
     async def cmd_admin(message: Message, state: FSMContext) -> None:
         await state.set_state(AdminAuth.waiting_password)
-        await message.answer("🔑 Введите пароль:")
+        await message.answer(texts.ASK_PASSWORD)
 
     @router.message(AdminAuth.waiting_password)
     async def check_password(message: Message, state: FSMContext) -> None:
@@ -41,50 +41,49 @@ def create_admin_router(app_state: AppState) -> Router:
         if gate.is_throttled(user_id):
             await state.clear()
             await message.answer(
-                "⏳ Слишком много попыток. "
-                "Попробуйте через 5 минут.",
+                texts.TOO_MANY_ATTEMPTS,
                 reply_markup=client_menu(),
             )
             return
         if gate.authorize(user_id, message.text or ""):
             await state.clear()
-            await message.answer("✅ Добро пожаловать!", reply_markup=admin_menu())
+            await message.answer(texts.ADMIN_WELCOME, reply_markup=admin_menu())
         else:
             await state.clear()
-            await message.answer("❌ Неверный пароль.", reply_markup=client_menu())
+            await message.answer(texts.BAD_PASSWORD, reply_markup=client_menu())
 
     @router.message(F.text == "➕ Новый заказ")
     async def start_new_order(message: Message, state: FSMContext) -> None:
         if not is_admin(message.from_user.id):  # type: ignore[union-attr]
             return
         await state.set_state(OrderCreate.entering_number)
-        await message.answer("📋 Номер заказа:")
+        await message.answer(texts.ENTER_NUMBER)
 
     @router.message(OrderCreate.entering_number)
     async def enter_order_number(message: Message, state: FSMContext) -> None:
         await state.update_data(number=message.text or "")
         await state.set_state(OrderCreate.entering_client)
-        await message.answer("👤 Клиент (username или user_id):")
+        await message.answer(texts.ENTER_CLIENT)
 
     @router.message(OrderCreate.entering_client)
     async def enter_order_client(message: Message, state: FSMContext) -> None:
         await state.update_data(client=message.text or "")
         await state.set_state(OrderCreate.entering_title)
-        await message.answer("📝 Название заказа:")
+        await message.answer(texts.ENTER_TITLE)
 
     @router.message(OrderCreate.entering_title)
     async def enter_order_title(message: Message, state: FSMContext) -> None:
         await state.update_data(title=message.text or "")
         statuses = await service.get_statuses(db)
         if not statuses:
-            await message.answer("❌ Нет статусов. Настройте статусы.")
+            await message.answer(texts.NO_STATUSES)
             await state.clear()
             return
         kb = InlineKeyboardMarkup(
             inline_keyboard=[[InlineKeyboardButton(text=s["name"], callback_data=f"os:{s['id']}")] for s in statuses]
         )
         await state.set_state(OrderCreate.choosing_status)
-        await message.answer("📊 Начальный статус:", reply_markup=kb)
+        await message.answer(texts.CHOOSE_INITIAL_STATUS, reply_markup=kb)
 
     @router.callback_query(F.data.startswith("os:"), OrderCreate.choosing_status)
     async def choose_status(callback: CallbackQuery, state: FSMContext) -> None:
@@ -94,24 +93,25 @@ def create_admin_router(app_state: AppState) -> Router:
             return
         status_id = parse_callback_int(callback.data, "os:")
         if status_id is None:
-            await callback.answer("Некорректный запрос.", show_alert=True)
+            await callback.answer(texts.BAD_REQUEST, show_alert=True)
             return
         await state.update_data(status_id=status_id)
         data = await state.get_data()
         kb = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
-                    InlineKeyboardButton(text="✅ Создать", callback_data="order_confirm"),
-                    InlineKeyboardButton(text="❌ Отмена", callback_data="order_cancel"),
+                    InlineKeyboardButton(text=texts.BTN_CREATE, callback_data="order_confirm"),
+                    InlineKeyboardButton(text=texts.BTN_CANCEL, callback_data="order_cancel"),
                 ]
             ]
         )
         await state.set_state(OrderCreate.confirming)
         await callback.message.edit_text(  # type: ignore[union-attr]
-            f"Создать заказ?\n"
-            f"📋 #{escape(str(data.get('number', '')))}\n"
-            f"👤 {escape(str(data.get('client', '')))}\n"
-            f"📝 {escape(str(data.get('title', '')))}",
+            texts.confirm_create(
+                escape(str(data.get("number", ""))),
+                escape(str(data.get("client", ""))),
+                escape(str(data.get("title", ""))),
+            ),
             reply_markup=kb,
         )
         await callback.answer()
@@ -129,18 +129,18 @@ def create_admin_router(app_state: AppState) -> Router:
             status_id=int(str(data.get("status_id", 0))),
         )
         await state.clear()
-        await callback.message.edit_text("✅ Заказ создан!")  # type: ignore[union-attr]
+        await callback.message.edit_text(texts.ORDER_CREATED)  # type: ignore[union-attr]
         await callback.answer()
-        await callback.message.answer(f"📦 Заказ #{data.get('number', '')} создан.", reply_markup=admin_menu())  # type: ignore[union-attr]
+        await callback.message.answer(texts.order_created(str(data.get("number", ""))), reply_markup=admin_menu())  # type: ignore[union-attr]
 
     @router.callback_query(F.data == "order_cancel")
     async def cancel_order(callback: CallbackQuery, state: FSMContext) -> None:
         if not callback.from_user or not is_admin(callback.from_user.id):
             return
         await state.clear()
-        await callback.message.edit_text("Отменено.")  # type: ignore[union-attr]
+        await callback.message.edit_text(texts.CANCELLED)  # type: ignore[union-attr]
         await callback.answer()
-        await callback.message.answer("Выберите действие:", reply_markup=admin_menu())  # type: ignore[union-attr]
+        await callback.message.answer(texts.CHOOSE_ACTION, reply_markup=admin_menu())  # type: ignore[union-attr]
 
     @router.message(F.text == "📦 Заказы")
     async def list_orders(message: Message) -> None:
@@ -148,15 +148,15 @@ def create_admin_router(app_state: AppState) -> Router:
             return
         orders = await service.get_active_orders(db)
         if not orders:
-            await message.answer("Нет заказов.")
+            await message.answer(texts.NO_ORDERS)
             return
         for o in orders[:10]:
             card = order_card(o)
             kb = InlineKeyboardMarkup(
                 inline_keyboard=[
                     [
-                        InlineKeyboardButton(text="▶️ Следующий", callback_data=f"next:{o['id']}"),
-                        InlineKeyboardButton(text="✅ Закрыть", callback_data=f"close:{o['id']}"),
+                        InlineKeyboardButton(text=texts.BTN_NEXT, callback_data=f"next:{o['id']}"),
+                        InlineKeyboardButton(text=texts.BTN_CLOSE, callback_data=f"close:{o['id']}"),
                     ]
                 ]
             )
@@ -170,15 +170,15 @@ def create_admin_router(app_state: AppState) -> Router:
             return
         order_id = parse_callback_int(callback.data, "next:")
         if order_id is None:
-            await callback.answer("Некорректный запрос.", show_alert=True)
+            await callback.answer(texts.BAD_REQUEST, show_alert=True)
             return
         order = await service.get_order(db, order_id)
         if not order:
-            await callback.answer("Заказ не найден.")
+            await callback.answer(texts.ORDER_MISSING)
             return
         next_st = await service.get_next_status(db, int(order["status_id"]))
         if not next_st:
-            await callback.message.edit_text("✅ Финальный статус достигнут.")  # type: ignore[union-attr]
+            await callback.message.edit_text(texts.FINAL_STATUS)  # type: ignore[union-attr]
             await callback.answer()
             return
         await service.update_order_status(db, order_id, int(next_st["id"]), callback.from_user.id)
@@ -191,7 +191,7 @@ def create_admin_router(app_state: AppState) -> Router:
                 )
             except Exception:
                 pass
-        await callback.message.edit_text(f"✅ Статус обновлён: {next_st['name']}")  # type: ignore[union-attr]
+        await callback.message.edit_text(texts.status_updated(str(next_st["name"])))  # type: ignore[union-attr]
         await callback.answer()
 
     @router.callback_query(F.data.startswith("close:"))
@@ -202,17 +202,17 @@ def create_admin_router(app_state: AppState) -> Router:
             return
         order_id = parse_callback_int(callback.data, "close:")
         if order_id is None:
-            await callback.answer("Некорректный запрос.", show_alert=True)
+            await callback.answer(texts.BAD_REQUEST, show_alert=True)
             return
         kb = InlineKeyboardMarkup(
             inline_keyboard=[
                 [
-                    InlineKeyboardButton(text="✅ Да", callback_data=f"close_yes:{order_id}"),
-                    InlineKeyboardButton(text="❌ Нет", callback_data="close_no"),
+                    InlineKeyboardButton(text=texts.BTN_YES, callback_data=f"close_yes:{order_id}"),
+                    InlineKeyboardButton(text=texts.BTN_NO, callback_data="close_no"),
                 ]
             ]
         )
-        await callback.message.edit_text("❓ Закрыть заказ?", reply_markup=kb)  # type: ignore[union-attr]
+        await callback.message.edit_text(texts.CONFIRM_CLOSE, reply_markup=kb)  # type: ignore[union-attr]
         await callback.answer()
 
     @router.callback_query(F.data.startswith("close_yes:"))
@@ -223,17 +223,17 @@ def create_admin_router(app_state: AppState) -> Router:
             return
         order_id = parse_callback_int(callback.data, "close_yes:")
         if order_id is None:
-            await callback.answer("Некорректный запрос.", show_alert=True)
+            await callback.answer(texts.BAD_REQUEST, show_alert=True)
             return
         await service.close_order(db, order_id)
-        await callback.message.edit_text("✅ Заказ закрыт.")  # type: ignore[union-attr]
+        await callback.message.edit_text(texts.ORDER_CLOSED)  # type: ignore[union-attr]
         await callback.answer()
 
     @router.callback_query(F.data == "close_no")
     async def cancel_close(callback: CallbackQuery) -> None:
         if not callback.from_user or not is_admin(callback.from_user.id):
             return
-        await callback.message.edit_text("Оставлено.")  # type: ignore[union-attr]
+        await callback.message.edit_text(texts.CLOSE_DECLINED)  # type: ignore[union-attr]
         await callback.answer()
 
     @router.message(F.text == "📊 Статистика")
@@ -243,6 +243,6 @@ def create_admin_router(app_state: AppState) -> Router:
         count = await service.get_order_count(db)
         stats = await service.get_status_stats(db)
         lines = [f"  {escape(str(s['name']))}: {s['cnt']}" for s in stats]
-        await message.answer(f"📊 Заказов: {count}\n\nПо статусам:\n" + "\n".join(lines))
+        await message.answer(texts.order_stats(count, "\n".join(lines)))
 
     return router
