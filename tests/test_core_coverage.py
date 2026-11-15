@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.core import auth, payments, sentry, storage
+from src.core import auth, payments, storage
 from src.core.config import Config
 from src.core.metrics import Metrics, UpdatesMiddleware
 
@@ -18,12 +18,6 @@ async def test_payment_provider():
     assert payments.PaymentProvider is not None  # Protocol, not ABC
 
 
-def test_sentry_no_dsn():
-    sentry.init_sentry("")
-    sentry.init_sentry(None)
-
-
-@pytest.mark.asyncio
 async def test_auth_middleware():
     db = MagicMock()
     mw = auth.AuthMiddleware(db)
